@@ -1,13 +1,16 @@
 const path = require('path')
 const webpack = require('webpack')
+const config = require('./config')
+const utils = require('./build/utils')
 const htmlWebpackPlugin = require('html-webpack-plugin')
 const ExtractTextPlugin = require('extract-text-webpack-plugin')
 
 module.exports = {
     entry: './src/app.js',
     output: {
-        path: path.resolve(__dirname, 'dist'),
-        filename: 'js/[name].js'
+        path: config.build.assetsRoot,
+        filename: utils.assetsPath('js/[name].js'),
+        publicPath: config.build.assetsPubicPath
     },
     module: {
         rules: [
@@ -68,33 +71,57 @@ module.exports = {
                         'less-loader'
                     ]
                 })
+            },
+            {
+                test: /\.(png|jpe?g|gif|svg)$/i,
+                use: [
+                    {
+                        loader: 'url-loader',
+                        options: {
+                            name: utils.assetsPath('img/[name].[hash:7].[ext]'),
+                            limit: 8192
+                        }
+                    }
+                ]
             }
         ]
     },
     plugins: [
         new htmlWebpackPlugin({
-            filename: 'index.html',
+            filename: config.build.index,
             template: 'index.html',
+            inject: true,
             minify: {
                 removeComments: true,
                 removeScriptTypeAttributes: true,
                 collapseWhitespace: false,
                 keepClosingSlash: true
-            }
+            },
+            chunksSortMode: 'dependency'
         }),
         new webpack.optimize.UglifyJsPlugin({
             compress: {
-                warnings: false,
-                drop_console: false
+                warnings: false
             }
         }),
         new ExtractTextPlugin({
-            filename: 'css/[name].css',
-            allChunks: true
+            filename: utils.assetsPath('css/[name].[contenthash].css')
         }),
         new webpack.optimize.CommonsChunkPlugin({
             name: 'vendor',
-            filename: 'js/vendor.min.js'
+            minChunks: function (module, count) {
+                return (
+                    module.resource &&
+                    /\.js$/.test(module.resource) &&
+                    module.resource.indexOf(
+                        path.join(__dirname, '../node_modules')
+                    ) === 0
+                )
+            }
+        }),
+        new webpack.optimize.CommonsChunkPlugin({
+            name: 'manifest',
+            chunks: ['vendor']
         })
     ]
 }
